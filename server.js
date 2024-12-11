@@ -18,7 +18,7 @@ app.post('/api/pay', (req, res) => {
   }
 
   const upiURL = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent(transactionNote || 'UPI Payment')}`;
-
+  console.log(`Link ${upiURL}`)
   return res.json({ paymentLink: upiURL });
 });
 
