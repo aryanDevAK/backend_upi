@@ -1,5 +1,0 @@
-express 
-body-parser 
-axios 
-dotenv
-cors
