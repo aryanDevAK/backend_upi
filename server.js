@@ -1,28 +1,61 @@
-// Backend for UPI Intent Payment Integration
+// Backend for UPI Intent Payment Integration with Payment Confirmation
 
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
+const bodyParser = require('body-parser');
+
 const app = express();
-const PORT = 5000;
-
-// Middleware
-app.use(express.json());
 app.use(cors());
+app.use(bodyParser.json());
 
-// API Route
+// Simulated Database
+let orders = [];
+
+// Generate Payment Link Endpoint
 app.post('/api/pay', (req, res) => {
   const { amount, upiId, name, transactionNote } = req.body;
 
-  if (!amount || !upiId || !name) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Create a unique order ID
+  const orderId = `ORD${Date.now()}`;
+  const paymentLink = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${transactionNote}`;
+
+  // Save order details
+  orders.push({ orderId, amount, upiId, name, transactionNote, status: 'pending' });
+
+  res.json({ paymentLink, orderId });
+});
+
+// Simulate Webhook for Payment Confirmation
+app.post('/api/payment/webhook', (req, res) => {
+  const { orderId, status } = req.body;
+
+  // Find the order and update its status
+  const order = orders.find((o) => o.orderId === orderId);
+
+  if (!order) {
+    return res.status(404).json({ message: 'Order not found' });
   }
 
-  const upiURL = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent(transactionNote || 'UPI Payment')}`;
-  console.log(`Link ${upiURL}`)
-  return res.json({ paymentLink: upiURL });
+  order.status = status;
+
+  if (status === 'success') {
+    return res.status(200).json({ message: 'Payment confirmed', order });
+  } else {
+    return res.status(400).json({ message: 'Payment failed', order });
+  }
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Endpoint to Check Order Status (For Testing)
+app.get('/api/order/:orderId', (req, res) => {
+  const { orderId } = req.params;
+  const order = orders.find((o) => o.orderId === orderId);
+
+  if (!order) {
+    return res.status(404).json({ message: 'Order not found' });
+  }
+
+  res.json({ order });
 });
+
+app.listen(5000, () => console.log('Server running on port 5000'));
